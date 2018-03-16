@@ -1,60 +1,106 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-    <h1>{{ msg }}</h1>
-    <h2>Essential Links</h2>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank">Twitter</a></li>
-    </ul>
-    <h2>Ecosystem</h2>
-    <ul>
-      <li><a href="http://router.vuejs.org/" target="_blank">vue-router</a></li>
-      <li><a href="http://vuex.vuejs.org/" target="_blank">vuex</a></li>
-      <li><a href="http://vue-loader.vuejs.org/" target="_blank">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank">awesome-vue</a></li>
-    </ul>
+    <div class="featuredPokemon" v-if="featuredPokemon">
+      <h1>{{featuredPokemon.name}}</h1>
+      <p>Types:</p>
+      <ul>
+        <li v-for="(type, i) in featuredPokemon.types" :key="i">
+          {{type.type.name}}
+        </li>
+      </ul>
+      <img :src="featuredPokemon.sprites.front_default" />
+    </div>
+    <child-component :pokemon="pokemon" @getDetails="getPokeDetails" @sortPokemon="sortColumn" @previousPage="getPrevPage" @nextPage="getNextPage"></child-component>
   </div>
 </template>
 
 <script>
+import ChildComponent from './Child.vue'
+import axios from 'axios';
+import _ from 'underscore';
+
 export default {
   name: 'app',
   data () {
     return {
-      msg: 'Welcome to Your Vue.js App'
+      pokemon: [],
+      next: "",
+      previous: "" ,
+      featuredPokemon: ""
     }
+  },
+  components: {
+    ChildComponent
+  },
+  methods: {
+    sortColumn(ascending) {
+      if (ascending) {
+        this.pokemon = _.sortBy(this.pokemon, 'name').reverse();
+      } else {
+        this.pokemon = _.sortBy(this.pokemon, 'name');
+      }
+    },
+    getPrevPage () {
+      if(this.previous) {
+        axios.get(this.previous).then(res => {
+          this.pokemon = res.data.results;
+          this.next = res.data.next;
+          this.previous = res.data.previous;
+        }).catch(err => console.log('err', err));
+      } else {
+        alert('This is the first page dummy');
+      }
+    },
+    getNextPage () {
+      if(this.next) {
+        axios.get(this.next).then(res => {
+          this.pokemon = res.data.results;
+          this.next = res.data.next;
+          this.previous = res.data.previous;
+        }).catch(err => console.log('err', err));
+      } else {
+        alert('This is the last page dummy');
+      }
+    },
+    getPokeDetails(value) {
+      axios.get(value).then(res => {
+          this.featuredPokemon = res.data;
+      }).catch(err => console.log('err', err));
+    }
+  },
+  mounted() {
+      axios.get('http://pokeapi.co/api/v2/pokemon/').then(res => {
+        this.pokemon = res.data.results;
+        this.next = res.data.next;
+        this.previous = res.data.previous;
+      }).catch(err => console.log('err', err));
   }
 }
 </script>
 
 <style lang="scss">
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-h1, h2 {
-  font-weight: normal;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-
-a {
-  color: #42b983;
-}
+  html {
+    min-height: 100%;
+  }
+  body {
+    background-image: url("https://images7.alphacoders.com/592/thumb-1920-592678.jpg");
+    background-repeat: none;
+    background-position: top;
+    font-family: 'Rammetto One', cursive;
+    margin: 0;
+    padding: 0;
+    min-height:100%;
+  }
+  li, ul {
+    margin: 0;
+    padding: 0;
+    color: fuchsia;
+  }
+  .featuredPokemon {
+    p, h1 {
+      margin: 0;
+    }
+    background: rgba(255, 240, 255, 0.5);
+    text-align: center;
+  }
 </style>
